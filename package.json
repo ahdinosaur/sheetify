@@ -1,15 +1,22 @@
 {
   "name": "sheetify",
   "version": "2.0.0",
-  "description": "",
-  "main": "sheetify.js",
+  "description": "CSS module bundler that works with npm modules like browserify does",
+  "main": "index.js",
   "scripts": {
     "test": "faucet test/*.js"
   },
-  "author": "",
+  "repository": "sheetify/sheetify",
   "bin": {
-    "sheetify": "bin.js"
+    "sheetify": "bin/sheetify.js"
   },
+  "keywords": [
+    "css",
+    "preprocessor",
+    "modular",
+    "sheetify"
+  ],
+  "license": "MIT",
   "dependencies": {
     "once": "~1.3.0",
     "style-deps": "^2.0.1",
@@ -21,5 +28,10 @@
     "tape": "~2.4.2",
     "wrap-selectors": "~0.1.0",
     "faucet": "0.0.1"
-  }
+  },
+  "files": [
+    "index.js",
+    "LICENSE",
+    "HISTORY.md"
+  ]
 }
