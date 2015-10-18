@@ -18,5 +18,11 @@
     "style-resolve": "0.0.0",
     "through2": "^2.0.0",
     "uuid": "^2.0.1"
+  },
+  "scripts": {
+    "test": "node test"
+  },
+  "devDependencies": {
+    "tape": "^4.2.1"
   }
 }

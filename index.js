@@ -31,7 +31,7 @@ function sheetify (filename, options, done) {
     .process(src.toString())
     .toString()
 
-  transform(src, options, function (err, src) {
+  transform(filename, src, options, function (err, src) {
     return done(err, src, id)
   })
 
