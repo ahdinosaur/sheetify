@@ -42,7 +42,7 @@ function throwop (err) {
   if (err) throw err
 }
 
-function transform (src, options, done) {
+function transform (filename, src, options, done) {
   var use = options.use || []
   use = Array.isArray(use) ? use.slice() : [use]
 
@@ -69,7 +69,7 @@ function transform (src, options, done) {
 
       const transform = require(transformPath)
 
-      transform(src, opts, function (err, result) {
+      transform(filename, src, opts, function (err, result) {
         if (err) return next(err)
         src = result
         next()
