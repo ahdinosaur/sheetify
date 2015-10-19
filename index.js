@@ -1,6 +1,6 @@
-const waterfall = require('run-waterfall')
 const prefix = require('postcss-prefix')
 const resolve = require('style-resolve')
+const nodeResolve = require('resolve')
 const mapLimit = require('map-limit')
 const postcss = require('postcss')
 const crypto = require('crypto')
@@ -16,6 +16,7 @@ function sheetify (filename, options, done) {
 
   done = done || throwop
   options = options || {}
+
   filename = resolve.sync(filename, {
     basedir: options.basedir || process.cwd()
   })
@@ -62,7 +63,7 @@ function transform (filename, src, options, done) {
     const name = plugin[0]
     const opts = plugin[1]
 
-    resolve(name, {
+    nodeResolve(name, {
       basedir: opts.basedir || options.basedir
     }, function (err, transformPath) {
       if (err) return done(err)

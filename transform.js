@@ -1,5 +1,6 @@
 const staticEval = require('static-eval')
 const escodegen = require('escodegen')
+const mapLimit = require('map-limit')
 const astw = require('astw-babylon')
 const through = require('through2')
 const babylon = require('babylon')
@@ -36,7 +37,6 @@ function transform (filename, options) {
       }
     })
 
-    const requiredStyles = []
     const requires = sleuth(ast.program)
     const walk = astw(ast)
     const context = {
@@ -44,9 +44,21 @@ function transform (filename, options) {
       __filename: filename
     }
 
-    Object.keys(requires).filter(function (key) {
+    const sheetifyNames = Object.keys(requires).filter(function (key) {
       return requires[key] === 'sheetify'
-    }).forEach(function (varname) {
+    })
+
+    if (!sheetifyNames.length) {
+      stream.push(src)
+      stream.push(null)
+      return
+    }
+
+    filterRequires(ast.program, function (target) {
+      return target !== 'sheetify'
+    })
+
+    mapLimit(sheetifyNames, 1, function (varname, next) {
       walk(function (node) {
         if (node.name !== varname) return
         if (node.type !== 'Identifier') return
@@ -64,7 +76,7 @@ function transform (filename, options) {
         opts.basedir = opts.basedir || path.dirname(filename)
 
         sheetify(sourceFile, opts, function (err, style, uuid) {
-          if (err) return stream.emit('error', err)
+          if (err) return next(err)
 
           const parent = node.parent
 
@@ -74,9 +86,75 @@ function transform (filename, options) {
           delete parent.arguments
           delete parent.name
 
-          console.error(escodegen.generate(ast.program))
+          next(null, style)
         })
       })
+    }, function (err, styles) {
+      if (err) return stream.emit('error', err)
+
+      const relative = getRequirePath(filename)
+      const req = path.join(relative, 'insert-css')
+
+      styles = styles.join('\n')
+
+      ast.program.body.unshift({
+        type: 'ExpressionStatement',
+        expression: {
+          type: 'CallExpression',
+          callee: {
+            type: 'CallExpression',
+            callee: {
+              type: 'Identifier',
+              name: 'require'
+            },
+            arguments: [
+              {
+                type: 'Literal',
+                value: req,
+                rawValue: req,
+                raw: JSON.stringify(req)
+              }
+            ]
+          },
+          arguments: [
+            {
+              type: 'Literal',
+              value: styles,
+              rawValue: styles,
+              raw: JSON.stringify(styles)
+            }
+          ]
+        }
+      })
+
+      stream.push(escodegen.generate(ast.program))
+      stream.push(null)
     })
   }
+}
+
+function getRequirePath (filename) {
+  return path.relative(path.dirname(filename), path.dirname(__filename))
+}
+
+// doesn't currently handle inline requires, i.e.
+// require('sheetify')('./index.css')
+function filterRequires (program, filter) {
+  program.body = program.body.filter(function (node) {
+    if (node.type !== 'VariableDeclaration') return true
+
+    const decl = node.declarations
+
+    for (var i = 0; i < decl.length; i++) {
+      if (decl[i].init.type !== 'CallExpression') continue
+      if (decl[i].init.callee.name !== 'require') continue
+      var args = decl[i].init.arguments
+      if (filter(args[0].value)) continue
+      decl.splice(i--, 1)
+    }
+
+    return decl.length
+  })
+
+  return program.body
 }
